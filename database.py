@@ -18,10 +18,13 @@ class Database:
 
         if command_type == "find":
             query = command.get("query", {})
-            sort = command.get("sort", {})
+            sort = command.get("sort")
             projection = command.get("projection", {})
-            result = self.collection.find(query, projection).sort(sort)
-            return list(result)
+            if sort:
+                result = self.collection.find(query, projection).sort(sort)
+            else:
+                result = self.collection.find(query, projection)
+            return result
         else:
             return None
 

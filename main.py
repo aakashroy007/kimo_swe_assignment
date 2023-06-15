@@ -75,13 +75,13 @@ def shutdown_event():
 
 def debug_endpoint():
     client = TestClient(app)
-    response = client.get("/courses")
+    response = client.get("/chapter_info/Highlights%20of%20Calculus/Big%20Picture%20of%20Calculus")
 
     print(response.status_code)
     print(response.json())
 
 
-# debug_endpoint()
+debug_endpoint()
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="localhost", port=8000)
