@@ -46,8 +46,12 @@ async def get_courses():
 async def get_course_overview(course_name: str):
     command = {"type": "find", "query": {"name": course_name}}
     result = db.execute_command(command)
-    course_overview = [doc["description"] for doc in result]
-    return course_overview
+    course = next(result, None)
+    if not course:
+        return {"error": "Course not found"}
+    description = course.get("description")
+
+    return description
 
 
 @app.get("/chapter_info/{course_name}/{chapter_name}")
@@ -75,7 +79,9 @@ def shutdown_event():
 
 def debug_endpoint():
     client = TestClient(app)
-    response = client.get("/chapter_info/Highlights%20of%20Calculus/Big%20Picture%20of%20Calculus")
+    response = client.get(
+        "/chapter_info/Highlights%20of%20Calculus/Big%20Picture%20of%20Calculus"
+    )
 
     print(response.status_code)
     print(response.json())
