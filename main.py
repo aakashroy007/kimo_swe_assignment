@@ -24,6 +24,7 @@ if not db.collection.count_documents({}):
 class Chapter(BaseModel):
     name: str
     contents: str
+    rating: int
 
 
 class Course(BaseModel):
@@ -32,6 +33,7 @@ class Course(BaseModel):
     description: str
     domain: List[str]
     chapters: List[Chapter]
+    rating: int
 
 
 @app.get("/courses")
@@ -72,6 +74,40 @@ async def get_chapter_info(course_name: str, chapter_name: str):
     return chapter_text
 
 
+@app.post("/rate_chapter/{course_name}/{chapter_name}/{rating}")
+async def rate_chapter(course_name: str, chapter_name: str, rating: int):
+    if rating not in [-1, 1]:
+        return {
+            "error": "Invalid rating. Only positive (1) and negative (-1) ratings are allowed."
+        }
+
+    command = {"type": "find", "query": {"name": course_name}}
+    result = db.execute_command(command)
+    course = next(result, None)
+    if not course:
+        return {"error": "Course not found"}
+
+    chapters = course.get("chapters", [])
+    chapter = next((c for c in chapters if c.get("name") == chapter_name), None)
+    if not chapter:
+        return {"error": "Chapter not found"}
+
+    chapter["rating"] = rating
+
+    chapter_ratings = [ch.get("rating", 0) for ch in chapters]
+    course_rating = (
+        sum(chapter_ratings) / len(chapter_ratings) if chapter_ratings else 0
+    )
+    course["rating"] = course_rating
+
+    db.collection.replace_one({"name": course_name}, course)
+
+    return {
+        "message": "Chapter rating added successfully",
+        "course_rating": course_rating,
+    }
+
+
 @app.on_event("shutdown")
 def shutdown_event():
     db.close_connection()
@@ -87,7 +123,7 @@ def debug_endpoint():
     print(response.json())
 
 
-debug_endpoint()
+# debug_endpoint()
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="localhost", port=8000)
