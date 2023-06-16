@@ -1,6 +1,6 @@
 import json
 from typing import List
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from pydantic import BaseModel
 from database import Database
 import uvicorn
@@ -37,8 +37,16 @@ class Course(BaseModel):
 
 
 @app.get("/courses")
-async def get_courses():
-    command = {"type": "find", "query": {}, "sort": [("name", 1)]}
+async def get_courses(mode: str = Query(..., description="Mode of retrieval")):
+    if mode == "alphabetical":
+        command = {"type": "find", "query": {}, "sort": [("name", 1)]}
+    elif mode == "date":
+        command = {"type": "find", "query": {}, "sort": [("date", -1)]}
+    elif mode == "rating":
+        command = {"type": "find", "query": {}, "sort": [("rating", -1)]}
+    else:
+        return {"error": "Invalid mode"}
+    
     result = db.execute_command(command)
     courses = [doc["name"] for doc in result]
     return {"courses": courses}
