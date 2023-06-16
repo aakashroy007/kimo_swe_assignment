@@ -5,8 +5,6 @@ from pydantic import BaseModel
 from database import Database
 import uvicorn
 
-from fastapi.testclient import TestClient
-
 
 app = FastAPI()
 
@@ -46,7 +44,7 @@ async def get_courses(mode: str = Query(..., description="Mode of retrieval")):
         command = {"type": "find", "query": {}, "sort": [("rating", -1)]}
     else:
         return {"error": "Invalid mode"}
-    
+
     result = db.execute_command(command)
     courses = [doc["name"] for doc in result]
     return {"courses": courses}
@@ -61,7 +59,7 @@ async def get_course_overview(course_name: str):
         return {"error": "Course not found"}
     description = course.get("description")
 
-    return description
+    return {"course_overview": description}
 
 
 @app.get("/chapter_info/{course_name}/{chapter_name}")
@@ -79,7 +77,7 @@ async def get_chapter_info(course_name: str, chapter_name: str):
     if not chapter_text:
         return {"error": "Chapter not found"}
 
-    return chapter_text
+    return {"chapter_information": chapter_text}
 
 
 @app.post("/rate_chapter/{course_name}/{chapter_name}/{rating}")
@@ -120,18 +118,6 @@ async def rate_chapter(course_name: str, chapter_name: str, rating: int):
 def shutdown_event():
     db.close_connection()
 
-
-def debug_endpoint():
-    client = TestClient(app)
-    response = client.get(
-        "/chapter_info/Highlights%20of%20Calculus/Big%20Picture%20of%20Calculus"
-    )
-
-    print(response.status_code)
-    print(response.json())
-
-
-# debug_endpoint()
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="localhost", port=8000)
